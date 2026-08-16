@@ -5,6 +5,7 @@ declare(strict_types=1);
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 
+require __DIR__ . '/vendor/autoload.php';
 $config = require __DIR__ . '/config.php';
 
 function respond(array $data, int $status = 200): never
@@ -49,14 +50,8 @@ function normalizeCookie(string $cookie): string
     return $cookie;
 }
 
-function configuredCt0(array $config, string $cookie): ?string
+function configuredCt0(string $cookie): ?string
 {
-    $ct0 = trim((string)($config['ct0'] ?? ''));
-
-    if ($ct0 !== '') {
-        return $ct0;
-    }
-
     return getCt0($cookie);
 }
 
@@ -64,7 +59,7 @@ function authStatus(array $config): array
 {
     $cookie = normalizeCookie((string)($config['cookie'] ?? ''));
     $bearer = trim((string)($config['bearer'] ?? ''));
-    $ct0 = configuredCt0($config, $cookie);
+    $ct0 = configuredCt0($cookie);
 
     return [
         'cookie_configured' => $cookie !== '',
@@ -72,6 +67,49 @@ function authStatus(array $config): array
         'bearer_configured' => $bearer !== '',
         'ready' => $ct0 !== null && $ct0 !== '' && $bearer !== '',
     ];
+}
+
+function database(array $config): PDO
+{
+    try {
+        return App\Database::connect($config);
+    } catch (Throwable $exception) {
+        error_log('X Ads database connection failed: ' . $exception->getMessage());
+        respond(['error' => 'Could not connect to the X Ads database.'], 500);
+    }
+}
+
+function userAccounts(array $config): array
+{
+    try {
+        $statement = database($config)->query(
+            'SELECT entity_id, account_id, user_id FROM `user` ORDER BY entity_id ASC'
+        );
+
+        return $statement->fetchAll();
+    } catch (PDOException $exception) {
+        error_log('X Ads account query failed: ' . $exception->getMessage());
+        respond(['error' => 'Could not load X Ads accounts from the database.'], 500);
+    }
+}
+
+function resolveUserAccount(array $accounts, int $entityId): array
+{
+    if ($accounts === []) {
+        respond(['error' => 'No X Ads accounts exist in the database.'], 422);
+    }
+
+    if ($entityId <= 0) {
+        return $accounts[0];
+    }
+
+    foreach ($accounts as $account) {
+        if ((int)$account['entity_id'] === $entityId) {
+            return $account;
+        }
+    }
+
+    respond(['error' => 'Selected X Ads account was not found.'], 404);
 }
 
 function cleanParams(array $params, bool $keepEmpty = false): array
@@ -135,12 +173,12 @@ function xRequest(
 ): array {
     $cookie = normalizeCookie((string)($config['cookie'] ?? ''));
     $bearer = trim((string)($config['bearer'] ?? ''));
-    $ct0 = configuredCt0($config, $cookie);
+    $ct0 = configuredCt0($cookie);
 
     if ($ct0 === null || $ct0 === '') {
         respond([
-            'error' => 'Missing ct0 in config.php.',
-            'hint' => 'Set ct0 in config.php. Cookie is optional.',
+            'error' => 'The configured Cookie does not contain ct0.',
+            'hint' => 'Copy a complete X Cookie request header containing ct0 into config.php.',
         ], 500);
     }
 
@@ -253,7 +291,7 @@ function streamAsset(array $config, string $url): never
     }
 
     $cookie = normalizeCookie((string)($config['cookie'] ?? ''));
-    $ct0 = configuredCt0($config, $cookie);
+    $ct0 = configuredCt0($cookie);
     $headers = [
         'Accept: image/avif,image/webp,image/apng,image/svg+xml,image/*,video/*,*/*;q=0.8',
         'Origin: https://ads.x.com',
@@ -437,12 +475,16 @@ function createWebsiteCard(
 }
 
 $action = (string)($_GET['action'] ?? '');
-$accountId = (string)($config['account_id'] ?? '');
-$userId = (string)($config['user_id'] ?? '');
 
-if ($accountId === '' || $userId === '') {
-    respond(['error' => 'account_id or user_id is missing in config.php.'], 500);
+if ($action === 'asset') {
+    streamAsset($config, trim((string)($_GET['url'] ?? '')));
 }
+
+$accounts = userAccounts($config);
+$selectedAccount = resolveUserAccount($accounts, (int)($_GET['entity_id'] ?? 0));
+$entityId = (int)$selectedAccount['entity_id'];
+$accountId = (string)$selectedAccount['account_id'];
+$userId = (string)$selectedAccount['user_id'];
 
 switch ($action) {
     case 'config':
@@ -452,15 +494,21 @@ switch ($action) {
             'data' => [
                 'account_id' => $accountId,
                 'user_id' => $userId,
+                'entity_id' => $entityId,
+                'accounts' => array_map(
+                    static fn(array $account): array => [
+                        'entity_id' => (int)$account['entity_id'],
+                        'account_id' => (string)$account['account_id'],
+                        'user_id' => (string)$account['user_id'],
+                    ],
+                    $accounts
+                ),
                 'api_version' => (string)($config['api_version'] ?? '12'),
                 'schedule_after_minutes' => (int)($config['schedule_after_minutes'] ?? 1),
                 'authenticated' => $auth['ready'],
                 'auth' => $auth,
             ],
         ]);
-
-    case 'asset':
-        streamAsset($config, trim((string)($_GET['url'] ?? '')));
 
     case 'media':
         $mediaKey = trim((string)($_GET['id'] ?? ''));

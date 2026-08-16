@@ -1,0 +1,14 @@
+{
+    "name": "local/x-ads-mini-composer",
+    "description": "FlightPHP application for managing X Ads accounts and scheduled Website Card posts.",
+    "type": "project",
+    "license": "proprietary",
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        }
+    },
+    "require": {
+        "flightphp/core": "^3.19"
+    }
+}

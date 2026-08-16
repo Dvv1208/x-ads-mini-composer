@@ -80,6 +80,15 @@ h1 {
     white-space: nowrap;
 }
 
+.account-pill select {
+    max-width: 360px;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+}
+
 .tabs {
     display: flex;
     gap: 4px;
@@ -103,6 +112,70 @@ h1 {
     background: var(--panel);
     color: var(--text);
     box-shadow: 0 1px 5px rgba(15,20,25,.08);
+}
+
+.account-manager {
+    margin-bottom: 14px;
+    border: 1px solid var(--line);
+    border-radius: 13px;
+    background: var(--panel);
+    box-shadow: 0 2px 12px rgba(15, 20, 25, .04);
+}
+
+.account-manager summary {
+    padding: 12px 16px;
+    cursor: pointer;
+    font-weight: 650;
+}
+
+.account-manager-body {
+    display: grid;
+    grid-template-columns: minmax(280px, .7fr) minmax(420px, 1.3fr);
+    gap: 20px;
+    padding: 4px 16px 16px;
+}
+
+.account-form {
+    padding: 14px;
+    border-radius: 11px;
+    background: var(--soft);
+}
+
+.account-form .field:last-of-type {
+    margin-bottom: 12px;
+}
+
+.account-form-actions,
+.table-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.account-table-wrap {
+    overflow-x: auto;
+}
+
+.account-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.account-table th,
+.account-table td {
+    padding: 10px;
+    border-bottom: 1px solid var(--line);
+    text-align: left;
+    white-space: nowrap;
+}
+
+.account-table th {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.danger-btn {
+    color: var(--danger);
 }
 
 .panel {
@@ -486,6 +559,7 @@ textarea {
 @keyframes spin { to { transform: rotate(360deg); } }
 
 @media (max-width: 900px) {
+    .account-manager-body { grid-template-columns: 1fr; }
     .composer-grid { grid-template-columns: 1fr; }
     .form-side { border-right: 0; border-bottom: 1px solid var(--line); }
     .media-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }

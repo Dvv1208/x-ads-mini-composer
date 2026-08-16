@@ -1,0 +1,15 @@
+<FilesMatch "^(config\.php|database\.sql|README\.md|composer\.(json|lock))$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+RewriteEngine On
+RewriteRule ^(?:app|vendor)/ - [F,L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^api/users(?:/.*)?$ router.php [QSA,L]

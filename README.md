@@ -1,119 +1,108 @@
 # X Ads Mini Composer
 
-A tiny local UI for publishing X Ads Tweets directly, with Media Library selection.
+Small PHP application for creating scheduled X Ads Website Card posts.
 
 ## Requirements
 
-- PHP 8+
-- PHP cURL extension
-- An authenticated X / X Ads browser session that can already call the Ads API
+- PHP 8.1+
+- PHP extensions: `curl`, `pdo_mysql`, `mbstring`
+- MySQL or MariaDB
+- Composer 2 for local installation
+- HTTPS when deployed to hosting
+- A working authenticated X Ads browser session
 
-Check:
+## Local database
 
-```bash
-php -v
-php -m | grep curl
+The local database is `if0_42654253_x_ads`. It contains the `user` table:
+
+```text
+entity_id | account_id | user_id
 ```
 
-If cURL is missing on Ubuntu:
+The included account is:
 
-```bash
-sudo apt install php-curl
+```text
+1 | 18ce55nu7l7 | 1855582736
 ```
 
-## 1. Configure your X Ads values
+To rebuild the table, select `if0_42654253_x_ads` in phpMyAdmin and import
+`database.sql`.
 
-Open `config.php`.
+Add another X Ads account with:
 
-`account_id`, `user_id`, `bearer`, and `ct0` are filled from the browser-console script values.
+```sql
+INSERT INTO `user` (`account_id`, `user_id`)
+VALUES ('ACCOUNT_ID', 'USER_ID');
+```
 
-The optional `cookie` field can stay empty:
+The browser sends only `entity_id`. For every media, card, or schedule request,
+`api.php` resolves `account_id` and `user_id` from MySQL.
+
+## Configuration
+
+Edit `config.php`:
 
 ```php
-'cookie' => '',
+'database' => [
+    'host' => '127.0.0.1',
+    'port' => 3306,
+    'name' => 'if0_42654253_x_ads',
+    'username' => 'admin',
+    'password' => 'admin',
+    'charset' => 'utf8mb4',
+],
 ```
 
-The app sends X Ads requests using:
+On cPanel, replace the database username and password with the MySQL user
+assigned to `if0_42654253_x_ads`. Some hosts require `localhost` instead of
+`127.0.0.1`.
 
-```text
-Authorization: Bearer ...
-X-CSRF-Token: ct0
-X-Twitter-Auth-Type: OAuth2Session
-```
+Keep the X `bearer` and complete Cookie request header in `config.php`.
+The application extracts `ct0` directly from that Cookie.
+If X returns 401 or 403, copy a fresh Cookie header from a working
+`ads-api.x.com` browser request.
 
-If X returns 401 / 403, paste the full `Cookie` request header as a fallback:
-
-```php
-'cookie' => 'auth_token=...; ct0=...; twid=...; ...',
-```
-
-To get it:
-
-1. Log in to `https://ads.x.com/`.
-2. Open DevTools → Network.
-3. Trigger any request to `ads-api.x.com`.
-4. Click the request.
-5. Request Headers → `Cookie`.
-6. Copy the **entire Cookie header value**.
-7. Paste it into `config.php`.
-
-The server can extract `ct0` from that cookie automatically, but the hard-coded `ct0` value takes priority.
-If you accidentally paste the header label as `Cookie: auth_token=...`, the app strips `Cookie:` automatically.
-
-> Keep `config.php` private. The Cookie value is your authenticated browser session.
-
-## 2. Run
-
-From this folder:
+## Run locally
 
 ```bash
-php -S 127.0.0.1:8888
+composer install --no-dev --optimize-autoloader
+php -S 127.0.0.1:8888 router.php
 ```
 
-Open:
+Open `http://127.0.0.1:8888`.
 
-```text
-http://127.0.0.1:8888
-```
+## Deploy with cPanel, phpMyAdmin and FTP
 
-## Features
+1. Create `if0_42654253_x_ads` in cPanel MySQL Databases.
+2. Create a MySQL user and grant it all privileges on that database.
+3. Select the database in phpMyAdmin and import `database.sql`.
+4. Update the database credentials in `config.php`.
+5. Run Composer locally and upload the whole project, including `vendor`,
+   `composer.json`, and `composer.lock`, into `htdocs` using FTP.
+6. Enable HTTPS.
+7. Protect the directory with cPanel Directory Privacy or another login layer.
 
-- Schedule a Website Card Tweet about one minute ahead through the X Ads API
-- Load/search X Ads Media Library
-- Media pagination
-- Select up to 4 images
-- Select 1 GIF or 1 video
-- Website URL input with browser autofill support
-- Website Card mode uses one selected media item, matching the X Ads UI `MEDIA` component
-- Website Card scheduled Tweets use `nullcast=true`, matching the X Ads UI flow
-- Preview the last scheduled Tweet through X `tweet_previews`
-- When a Website Card is used, media is attached to the card, so the Scheduled Tweet response may show `media_keys: []`.
+No cron is needed. X executes the scheduled post.
 
-## X endpoints used
+## Current behavior
 
-```text
-GET    /11/accounts/:account_id/media_library
-GET    /11/accounts/:account_id/media_library/:media_key
-
-POST   /11/accounts/:account_id/scheduled_tweets
-POST   /11/accounts/:account_id/cards
-GET    /11/accounts/:account_id/tweet_previews
-```
-
-## If you get 401 / 403
-
-Your X browser session is probably stale or the Cookie header changed.
-
-Copy a fresh Cookie header from a working `ads-api.x.com` request and replace the value in `config.php`.
-
-If X changes the frontend Bearer later, update `bearer` in `config.php` from a current working request.
+- FlightPHP Core routes REST CRUD for accounts.
+- `GET /api/users` lists accounts.
+- `POST /api/users` creates an account.
+- `GET /api/users/:id` reads one account.
+- `PUT /api/users/:id` updates an account.
+- `DELETE /api/users/:id` deletes an account; the last account is protected.
+- Accounts are loaded from MySQL and selectable from the header.
+- Media Library is loaded for the selected account.
+- Website Card uses one selected media item.
+- Scheduled posts use `nullcast=false`.
+- Empty schedule input falls back to approximately one minute ahead.
+- Custom schedule input is interpreted as Asia/Ho_Chi_Minh and converted once
+  to UTC for X.
+- Post text is generated as `Wataa 👅 BASE62_ID`.
 
 ## Security
 
-Run this only on localhost:
-
-```bash
-php -S 127.0.0.1:8888
-```
-
-Do not bind it to `0.0.0.0` and do not upload `config.php` to a public server or Git repository.
+`config.php` contains an authenticated X session. Do not commit it or share it.
+The included `.htaccess` blocks direct web access to configuration and SQL files,
+but the application itself must still be protected from unauthorised users.
