@@ -3,7 +3,6 @@
 
     const state = {
         config: null,
-        users: [],
         media: new Map(),
         selectedMedia: [],
         mediaCursor: null,
@@ -11,16 +10,10 @@
     };
 
     const $ = (selector) => document.querySelector(selector);
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
 
     const els = {
         accountSelect: $('#accountSelect'),
-        accountForm: $('#accountForm'),
-        accountEntityId: $('#accountEntityId'),
-        accountIdInput: $('#accountIdInput'),
-        userIdInput: $('#userIdInput'),
-        accountSaveBtn: $('#accountSaveBtn'),
-        accountCancelBtn: $('#accountCancelBtn'),
-        accountTableBody: $('#accountTableBody'),
         scheduleAt: $('#scheduleAt'),
         websiteUrl: $('#websiteUrl'),
         headline: $('#headline'),
@@ -38,6 +31,7 @@
             cache: 'no-store',
             headers: {
                 'Content-Type': 'application/json',
+                'X-App-CSRF-Token': csrfToken,
                 ...(options.headers || {})
             },
             ...options
@@ -108,16 +102,12 @@
             .replaceAll("'", '&#039;');
     }
 
-    function mediaAssetUrl(src) {
-        return `api.php?action=asset&url=${encodeURIComponent(src)}`;
-    }
-
     function mediaPreviewHtml(item) {
         const src = item.media_type === 'VIDEO'
             ? (item.poster_media_url || item.media_url || '')
             : (item.media_url || item.poster_media_url || '');
         const label = escapeHtml(item.name || item.file_name || item.media_key || 'Media');
-        const assetSrc = src ? escapeHtml(mediaAssetUrl(src)) : '';
+        const assetSrc = src ? escapeHtml(src) : '';
 
         if (item.media_type === 'IMAGE' || item.media_type === 'GIF') {
             return src
@@ -146,29 +136,6 @@
         `).join('');
     }
 
-    function renderUserTable() {
-        els.accountTableBody.innerHTML = state.users.map(user => `
-            <tr>
-                <td>${user.entity_id}</td>
-                <td>${escapeHtml(user.account_id)}</td>
-                <td>${escapeHtml(user.user_id)}</td>
-                <td>
-                    <div class="table-actions">
-                        <button class="small-btn" type="button" data-account-edit="${user.entity_id}">Edit</button>
-                        <button class="small-btn danger-btn" type="button" data-account-delete="${user.entity_id}">Delete</button>
-                    </div>
-                </td>
-            </tr>
-        `).join('');
-    }
-
-    function resetAccountForm() {
-        els.accountForm.reset();
-        els.accountEntityId.value = '';
-        els.accountSaveBtn.textContent = 'Add account';
-        els.accountCancelBtn.hidden = true;
-    }
-
     function applyAccount(entityId, reloadMedia = false) {
         const account = state.config.accounts.find(item => item.entity_id === Number(entityId));
         if (!account) return false;
@@ -186,45 +153,25 @@
         return true;
     }
 
-    async function loadUsers(preferredEntityId = null) {
-        const json = await api('api/users');
-        state.users = json.data || [];
-        state.config.accounts = state.users.map(user => ({
-            entity_id: Number(user.entity_id),
-            account_id: user.account_id,
-            user_id: user.user_id
-        }));
-
-        const preferred = Number(preferredEntityId || state.config.entity_id);
-        const selected = state.config.accounts.some(account => account.entity_id === preferred)
-            ? preferred
-            : state.config.accounts[0]?.entity_id;
-
-        if (selected) {
-            state.config.entity_id = selected;
-        }
-
-        renderAccountSelector();
-        renderUserTable();
-
-        if (selected) applyAccount(selected);
-    }
-
     function validateSelection(nextItems) {
-        if (nextItems.length > 4) {
-            throw new Error('X allows at most 4 images.');
+        if (nextItems.length > 1) {
+            throw new Error('Website card uses one media item. Select only one media.');
         }
 
-        const nonImages = nextItems.filter(item => item.media_type !== 'IMAGE');
-
-        if (nonImages.length > 0 && nextItems.length > 1) {
-            throw new Error('GIF/video must be selected alone. X allows 1 GIF or 1 video.');
+        const invalid = nextItems.find(item => item.validation?.selectable === false);
+        if (invalid) {
+            throw new Error(invalid.validation.reason || 'This media cannot be selected.');
         }
     }
 
     function toggleMedia(key) {
         const item = state.media.get(key);
         if (!item) return;
+
+        if (item.validation?.selectable === false) {
+            toast(item.validation.reason || 'This media cannot be selected.', 'error');
+            return;
+        }
 
         const index = state.selectedMedia.findIndex(media => media.media_key === key);
 
@@ -274,18 +221,31 @@
 
         const selectedKeys = new Set(state.selectedMedia.map(item => item.media_key));
 
-        els.mediaGrid.innerHTML = items.map(item => `
+        els.mediaGrid.innerHTML = items.map(item => {
+            const validation = item.validation || {};
+            const invalid = validation.selectable === false;
+            const mediaKey = escapeHtml(item.media_key);
+            const title = invalid
+                ? `${item.media_key} — ${validation.reason || 'Unavailable'}`
+                : item.media_key;
+
+            return `
             <button
                 type="button"
-                class="media-card ${selectedKeys.has(item.media_key) ? 'selected' : ''}"
-                data-media-key="${escapeHtml(item.media_key)}"
-                title="${escapeHtml(item.name || item.file_name || item.media_key)}"
+                class="media-card ${selectedKeys.has(item.media_key) ? 'selected' : ''} ${invalid ? 'invalid' : ''}"
+                data-media-key="${mediaKey}"
+                aria-disabled="${invalid ? 'true' : 'false'}"
+                title="${escapeHtml(title)}"
             >
                 ${mediaPreviewHtml(item)}
-                <span class="type-pill">${escapeHtml(item.media_type || 'MEDIA')}</span>
+                <span class="media-card-gradient"></span>
+                <span class="media-key">${mediaKey}</span>
+                ${validation.ratio ? `<span class="ratio-pill">${escapeHtml(validation.ratio)}</span>` : ''}
+                ${invalid ? `<span class="media-warning">${escapeHtml(validation.reason || 'Unavailable')}</span>` : ''}
                 <span class="check-mark">✓</span>
             </button>
-        `).join('');
+        `;
+        }).join('');
     }
 
     async function loadMedia(reset = false) {
@@ -416,7 +376,8 @@
         try {
             const json = await api('api.php?action=config');
             state.config = json.data;
-            await loadUsers(state.config.entity_id);
+            renderAccountSelector();
+            applyAccount(state.config.entity_id);
 
             if (!state.config.authenticated) {
                 const message = configMessage(state.config);
@@ -452,70 +413,6 @@
     els.accountSelect.addEventListener('change', () => {
         if (!applyAccount(Number(els.accountSelect.value), true)) {
             toast('Selected account was not found.', 'error');
-        }
-    });
-
-    els.accountForm.addEventListener('submit', async event => {
-        event.preventDefault();
-
-        const entityId = Number(els.accountEntityId.value || 0);
-        const url = entityId ? `api/users/${entityId}` : 'api/users';
-
-        setButtonLoading(els.accountSaveBtn, true, entityId ? 'Saving…' : 'Adding…');
-
-        try {
-            const json = await api(url, {
-                method: entityId ? 'PUT' : 'POST',
-                body: JSON.stringify({
-                    account_id: els.accountIdInput.value.trim(),
-                    user_id: els.userIdInput.value.trim()
-                })
-            });
-
-            resetAccountForm();
-            await loadUsers(json.data.entity_id);
-            applyAccount(json.data.entity_id, true);
-            toast(entityId ? 'Account updated.' : 'Account added.', 'success');
-        } catch (error) {
-            toast(error.message, 'error');
-        } finally {
-            setButtonLoading(els.accountSaveBtn, false, entityId ? 'Save account' : 'Add account');
-        }
-    });
-
-    els.accountCancelBtn.addEventListener('click', resetAccountForm);
-
-    els.accountTableBody.addEventListener('click', async event => {
-        const editButton = event.target.closest('[data-account-edit]');
-        const deleteButton = event.target.closest('[data-account-delete]');
-
-        if (editButton) {
-            const user = state.users.find(item => Number(item.entity_id) === Number(editButton.dataset.accountEdit));
-            if (!user) return;
-
-            els.accountEntityId.value = user.entity_id;
-            els.accountIdInput.value = user.account_id;
-            els.userIdInput.value = user.user_id;
-            els.accountSaveBtn.textContent = 'Save account';
-            els.accountCancelBtn.hidden = false;
-            els.accountIdInput.focus();
-            return;
-        }
-
-        if (!deleteButton) return;
-
-        const entityId = Number(deleteButton.dataset.accountDelete);
-        const user = state.users.find(item => Number(item.entity_id) === entityId);
-        if (!user || !window.confirm(`Delete account ${user.account_id}?`)) return;
-
-        try {
-            await api(`api/users/${entityId}`, { method: 'DELETE' });
-            resetAccountForm();
-            await loadUsers(state.config.entity_id === entityId ? null : state.config.entity_id);
-            applyAccount(state.config.entity_id, true);
-            toast('Account deleted.', 'success');
-        } catch (error) {
-            toast(error.message, 'error');
         }
     });
 

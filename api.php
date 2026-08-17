@@ -8,6 +8,19 @@ header('Cache-Control: no-store');
 require __DIR__ . '/vendor/autoload.php';
 $config = require __DIR__ . '/config.php';
 
+App\Auth::start();
+if (!App\Auth::check()) {
+    respond(['error' => 'Authentication required.'], 401);
+}
+
+$requestMethod = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
+if (
+    !in_array($requestMethod, ['GET', 'HEAD'], true)
+    && !App\Auth::verifyCsrf($_SERVER['HTTP_X_APP_CSRF_TOKEN'] ?? null)
+) {
+    respond(['error' => 'Invalid CSRF token.'], 403);
+}
+
 function respond(array $data, int $status = 200): never
 {
     http_response_code($status);
@@ -272,82 +285,6 @@ function xRequest(
     ];
 }
 
-function streamAsset(array $config, string $url): never
-{
-    $parts = parse_url($url);
-    $scheme = strtolower((string)($parts['scheme'] ?? ''));
-    $host = strtolower((string)($parts['host'] ?? ''));
-    $allowedHosts = [
-        'pbs.twimg.com',
-        'video.twimg.com',
-        'ton.twimg.com',
-        'abs.twimg.com',
-        'amp.twimg.com',
-        'prod-periscope-profile.s3-us-west-2.amazonaws.com',
-    ];
-
-    if (!in_array($scheme, ['http', 'https'], true) || !in_array($host, $allowedHosts, true)) {
-        respond(['error' => 'Unsupported media asset URL.'], 400);
-    }
-
-    $cookie = normalizeCookie((string)($config['cookie'] ?? ''));
-    $ct0 = configuredCt0($cookie);
-    $headers = [
-        'Accept: image/avif,image/webp,image/apng,image/svg+xml,image/*,video/*,*/*;q=0.8',
-        'Origin: https://ads.x.com',
-        'Referer: https://ads.x.com/',
-        'User-Agent: Mozilla/5.0',
-    ];
-
-    if ($ct0 !== null && $ct0 !== '') {
-        $headers[] = 'X-CSRF-Token: ' . $ct0;
-    }
-
-    if ($cookie !== '') {
-        $headers[] = 'Cookie: ' . $cookie;
-    }
-
-    if (!empty($_SERVER['HTTP_RANGE'])) {
-        $headers[] = 'Range: ' . (string)$_SERVER['HTTP_RANGE'];
-    }
-
-    $ch = curl_init($url);
-    if ($ch === false) {
-        respond(['error' => 'Unable to initialize cURL.'], 500);
-    }
-
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_HTTPHEADER => $headers,
-        CURLOPT_TIMEOUT => (int)($config['timeout'] ?? 30),
-        CURLOPT_CONNECTTIMEOUT => 10,
-        CURLOPT_ENCODING => '',
-        CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_HEADER => false,
-    ]);
-
-    $raw = curl_exec($ch);
-    $curlError = curl_error($ch);
-    $status = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
-    $contentType = (string)curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
-    curl_close($ch);
-
-    if ($raw === false) {
-        respond([
-            'error' => 'Media asset request failed.',
-            'details' => $curlError,
-        ], 502);
-    }
-
-    http_response_code($status >= 100 ? $status : 500);
-    header('Content-Type: ' . ($contentType !== '' ? $contentType : 'application/octet-stream'), true);
-    header('Cache-Control: private, max-age=300', true);
-    header('Accept-Ranges: bytes');
-    header('Content-Length: ' . strlen($raw));
-    echo $raw;
-    exit;
-}
-
 function proxyResult(array $result): never
 {
     $status = (int)($result['status'] ?? 500);
@@ -356,6 +293,49 @@ function proxyResult(array $result): never
         : ['error' => 'Unknown proxy response.'];
 
     respond($body, $status >= 100 ? $status : 500);
+}
+
+function decorateMediaResult(array $result): array
+{
+    $body = $result['body'] ?? null;
+    if (!is_array($body) || !isset($body['data']) || !is_array($body['data'])) {
+        return $result;
+    }
+
+    if (array_is_list($body['data'])) {
+        foreach ($body['data'] as &$media) {
+            if (is_array($media)) {
+                $media['validation'] = App\MediaValidator::inspect($media);
+            }
+        }
+        unset($media);
+    } elseif (isset($body['data']['media_key'])) {
+        $body['data']['validation'] = App\MediaValidator::inspect($body['data']);
+    }
+
+    $result['body'] = $body;
+
+    return $result;
+}
+
+function mediaFromResult(array $result, string $mediaKey): ?array
+{
+    $data = $result['body']['data'] ?? null;
+    if (!is_array($data)) {
+        return null;
+    }
+
+    if (isset($data['media_key'])) {
+        return $data;
+    }
+
+    foreach ($data as $media) {
+        if (is_array($media) && (string)($media['media_key'] ?? '') === $mediaKey) {
+            return $media;
+        }
+    }
+
+    return null;
 }
 
 function previewHtml(array $body): ?string
@@ -476,10 +456,6 @@ function createWebsiteCard(
 
 $action = (string)($_GET['action'] ?? '');
 
-if ($action === 'asset') {
-    streamAsset($config, trim((string)($_GET['url'] ?? '')));
-}
-
 $accounts = userAccounts($config);
 $selectedAccount = resolveUserAccount($accounts, (int)($_GET['entity_id'] ?? 0));
 $entityId = (int)$selectedAccount['entity_id'];
@@ -514,11 +490,11 @@ switch ($action) {
         $mediaKey = trim((string)($_GET['id'] ?? ''));
 
         if ($mediaKey !== '') {
-            proxyResult(xRequest(
+            proxyResult(decorateMediaResult(xRequest(
                 $config,
                 'GET',
                 "accounts/{$accountId}/media_library/" . rawurlencode($mediaKey)
-            ));
+            )));
         }
 
         $query = cleanParams([
@@ -528,12 +504,12 @@ switch ($action) {
             'q' => $_GET['q'] ?? null,
         ]);
 
-        proxyResult(xRequest(
+        proxyResult(decorateMediaResult(xRequest(
             $config,
             'GET',
             "accounts/{$accountId}/media_library",
             $query
-        ));
+        )));
 
     case 'tweet':
         $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
@@ -566,8 +542,33 @@ switch ($action) {
             respond(['error' => 'Headline is required for the website card.'], 422);
         }
 
-        if ($mediaKeys === []) {
-            respond(['error' => 'Choose at least one media item for the website card.'], 422);
+        if (count($mediaKeys) !== 1) {
+            respond(['error' => 'Choose exactly one media item for the website card.'], 422);
+        }
+
+        $mediaKey = $mediaKeys[0];
+        $mediaResult = xRequest(
+            $config,
+            'GET',
+            "accounts/{$accountId}/media_library/" . rawurlencode($mediaKey)
+        );
+        $mediaStatus = (int)($mediaResult['status'] ?? 500);
+        if ($mediaStatus < 200 || $mediaStatus >= 300) {
+            proxyResult($mediaResult);
+        }
+
+        $media = mediaFromResult($mediaResult, $mediaKey);
+        if ($media === null) {
+            respond(['error' => 'X did not return the selected media item.'], 502);
+        }
+
+        $mediaValidation = App\MediaValidator::inspect($media);
+        if (!$mediaValidation['selectable']) {
+            respond([
+                'error' => (string)$mediaValidation['reason'],
+                'media_key' => $mediaKey,
+                'validation' => $mediaValidation,
+            ], 422);
         }
 
         $name = internalName(
@@ -701,6 +702,6 @@ switch ($action) {
     default:
         respond([
             'error' => 'Unknown action.',
-            'actions' => ['config', 'asset', 'media', 'tweet', 'preview'],
+            'actions' => ['config', 'media', 'tweet', 'preview'],
         ], 404);
 }

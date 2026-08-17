@@ -9,7 +9,8 @@
 </FilesMatch>
 
 RewriteEngine On
-RewriteRule ^(?:app|vendor)/ - [F,L]
+RewriteRule ^(?:app|vendor|views)/ - [F,L]
+RewriteRule ^$ router.php [QSA,L]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^api/users(?:/.*)?$ router.php [QSA,L]
+RewriteRule ^ router.php [QSA,L]

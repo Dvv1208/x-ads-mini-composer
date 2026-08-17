@@ -13,7 +13,16 @@ Small PHP application for creating scheduled X Ads Website Card posts.
 
 ## Local database
 
-The local database is `if0_42654253_x_ads`. It contains the `user` table:
+The local database is `if0_42654253_x_ads`. It contains:
+
+- `admin_user` for application login and roles.
+- `user` for X Ads account/user mappings.
+
+The seeded application login is username `admin`. Its initial password is the
+private value supplied during installation. The database stores only a
+`password_hash()` result, never Base64 or plaintext.
+
+The X Ads mapping table contains:
 
 ```text
 entity_id | account_id | user_id
@@ -71,6 +80,14 @@ php -S 127.0.0.1:8888 router.php
 
 Open `http://127.0.0.1:8888`.
 
+Application pages:
+
+```text
+/login  Shared login
+/       Authenticated Composer frontend
+/admin  Administrator-only X Ads account management
+```
+
 ## Deploy with cPanel, phpMyAdmin and FTP
 
 1. Create `if0_42654253_x_ads` in cPanel MySQL Databases.
@@ -80,12 +97,18 @@ Open `http://127.0.0.1:8888`.
 5. Run Composer locally and upload the whole project, including `vendor`,
    `composer.json`, and `composer.lock`, into `htdocs` using FTP.
 6. Enable HTTPS.
-7. Protect the directory with cPanel Directory Privacy or another login layer.
+7. Confirm that Apache `mod_rewrite` and PHP sessions are enabled.
+8. Sign in and verify both `/` and `/admin` before using the X API.
 
 No cron is needed. X executes the scheduled post.
 
 ## Current behavior
 
+- Frontend, admin, `api.php`, and CRUD routes all require a valid PHP session.
+- Admin routes require an `admin_user` row with role `admin`.
+- State-changing requests require a per-session CSRF token.
+- Five failed logins lock that account for 15 minutes.
+- Sessions expire after eight hours of inactivity.
 - FlightPHP Core routes REST CRUD for accounts.
 - `GET /api/users` lists accounts.
 - `POST /api/users` creates an account.
@@ -105,4 +128,5 @@ No cron is needed. X executes the scheduled post.
 
 `config.php` contains an authenticated X session. Do not commit it or share it.
 The included `.htaccess` blocks direct web access to configuration and SQL files,
-but the application itself must still be protected from unauthorised users.
+and the application enforces login on both pages and APIs. Use HTTPS in production
+so credentials and session cookies are encrypted in transit.

@@ -1,13 +1,12 @@
 <!doctype html>
 <html lang="en">
-
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
     <title>X Ads Mini Composer</title>
-    <link rel="stylesheet" href="assets/app.css?v=20260814-5">
+    <link rel="stylesheet" href="assets/app.css?v=20260816-2">
 </head>
-
 <body>
     <div class="shell">
         <div class="topbar">
@@ -15,53 +14,29 @@
                 <div class="x-logo">𝕏</div>
                 <div>
                     <h1>X Ads Mini Composer</h1>
-                    <div class="subtitle">Schedule Website Card posts about one minute ahead using the X Ads API.</div>
+                    <div class="subtitle">Schedule Website Card posts using the X Ads API.</div>
                 </div>
             </div>
+            <div class="header-actions">
+                <?php if (($currentUser['role'] ?? '') === 'admin'): ?>
+                    <a class="small-btn link-btn" href="admin">Admin</a>
+                <?php endif; ?>
+                <span class="signed-user"><?= htmlspecialchars((string)$currentUser['username'], ENT_QUOTES, 'UTF-8') ?></span>
+                <form method="post" action="logout">
+                    <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+                    <button class="small-btn" type="submit">Log out</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="account-bar">
+            <label for="accountSelect">X Ads account</label>
             <div class="account-pill">
                 <select id="accountSelect" aria-label="X Ads account">
                     <option value="">Loading account…</option>
                 </select>
             </div>
         </div>
-
-        <div class="tabs">
-            <button class="tab active" data-tab="composer">Composer</button>
-        </div>
-
-        <details class="account-manager" id="accountManager">
-            <summary>Manage accounts</summary>
-            <div class="account-manager-body">
-                <form id="accountForm" class="account-form" autocomplete="on">
-                    <input id="accountEntityId" type="hidden">
-                    <div class="field">
-                        <label for="accountIdInput">Account ID</label>
-                        <input id="accountIdInput" name="account_id" type="text" maxlength="32" required autocomplete="on">
-                    </div>
-                    <div class="field">
-                        <label for="userIdInput">User ID</label>
-                        <input id="userIdInput" name="user_id" type="text" inputmode="numeric" maxlength="32" required autocomplete="on">
-                    </div>
-                    <div class="account-form-actions">
-                        <button class="btn btn-primary" id="accountSaveBtn" type="submit">Add account</button>
-                        <button class="small-btn" id="accountCancelBtn" type="button" hidden>Cancel</button>
-                    </div>
-                </form>
-                <div class="account-table-wrap">
-                    <table class="account-table">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Account ID</th>
-                                <th>User ID</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="accountTableBody"></tbody>
-                    </table>
-                </div>
-            </div>
-        </details>
 
         <div class="panel">
             <section class="view active" id="view-composer">
@@ -120,8 +95,6 @@
     </div>
 
     <div class="status" id="status"></div>
-
-    <script src="assets/app.js?v=20260815-1" defer></script>
+    <script src="assets/app.js?v=20260817-1" defer></script>
 </body>
-
 </html>
