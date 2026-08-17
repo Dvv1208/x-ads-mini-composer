@@ -33,7 +33,7 @@
         grid-template-columns: 1fr;
     }
 
-    .form-side {
+    .destination-active .form-side {
         border-right: 0;
         border-bottom: 1px solid var(--line);
     }

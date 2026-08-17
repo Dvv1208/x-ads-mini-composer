@@ -6,7 +6,7 @@
     padding: 13px;
     border: 1px solid var(--line);
     border-radius: 13px;
-    background: #fff;
+    background: var(--panel);
 }
 
 .post-date {
@@ -47,7 +47,7 @@
 
 .small-btn {
     border: 1px solid var(--line);
-    background: #fff;
+    background: var(--panel);
     border-radius: 6px;
     padding: 7px 15px;
     font-weight: 650;

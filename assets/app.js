@@ -6,6 +6,8 @@
         media: new Map(),
         selectedMedia: [],
         mediaCursor: null,
+        mediaRequestId: 0,
+        destinationSelected: false,
         statusTimer: null
     };
 
@@ -14,6 +16,10 @@
 
     const els = {
         accountSelect: $('#accountSelect'),
+        composerGrid: $('#composerGrid'),
+        websiteDestination: $('#websiteDestination'),
+        websiteFields: $('#websiteFields'),
+        mediaLibraryPanel: $('#mediaLibraryPanel'),
         scheduleAt: $('#scheduleAt'),
         websiteUrl: $('#websiteUrl'),
         headline: $('#headline'),
@@ -147,14 +153,17 @@
         els.accountSelect.value = String(account.entity_id);
 
         if (reloadMedia) {
-            resetForm();
+            state.media.clear();
+            state.mediaCursor = null;
+            els.loadMoreMediaBtn.style.display = 'none';
+            resetFormFields();
 
             if (!state.config.authenticated) {
-                state.media.clear();
-                state.mediaCursor = null;
-                renderMediaGrid();
                 toast('The selected account session is missing or invalid. Update its X Cookie in Admin.', 'error');
-            } else {
+                if (state.destinationSelected) {
+                    els.mediaGrid.innerHTML = '<div class="empty" style="grid-column:1/-1">The selected account session is missing or invalid.</div>';
+                }
+            } else if (state.destinationSelected) {
                 loadMedia(true);
             }
         }
@@ -258,10 +267,14 @@
     }
 
     async function loadMedia(reset = false) {
+        if (!state.destinationSelected) return;
+
+        const requestId = ++state.mediaRequestId;
+
         if (reset) {
             state.media.clear();
             state.mediaCursor = null;
-            renderMediaGrid();
+            els.mediaGrid.innerHTML = '<div class="empty media-loading" style="grid-column:1/-1"><span class="spinner"></span>Loading media…</div>';
         }
 
         const params = new URLSearchParams({
@@ -276,38 +289,22 @@
 
         try {
             const json = await api(`api.php?${params}`);
+            if (requestId !== state.mediaRequestId || !state.destinationSelected) return;
+
             (json.data || []).forEach(item => state.media.set(item.media_key, item));
             state.mediaCursor = json.next_cursor || null;
-
             renderMediaGrid();
             renderSelected();
             els.loadMoreMediaBtn.style.display = state.mediaCursor ? '' : 'none';
         } catch (error) {
+            if (requestId !== state.mediaRequestId || !state.destinationSelected) return;
+
+            els.mediaGrid.innerHTML = `<div class="empty" style="grid-column:1/-1">${escapeHtml(error.message)}</div>`;
             toast(error.message, 'error');
         }
     }
 
-    async function ensureMediaLoaded(keys) {
-        const missing = keys.filter(key => !state.media.has(key));
-
-        for (const key of missing) {
-            try {
-                const params = new URLSearchParams({
-                    action: 'media',
-                    id: key,
-                    entity_id: String(state.config.entity_id)
-                });
-                const json = await api(`api.php?${params}`);
-                if (json.data?.media_key) {
-                    state.media.set(json.data.media_key, json.data);
-                }
-            } catch (error) {
-                console.warn('Cannot load media', key, error);
-            }
-        }
-    }
-
-    function resetForm() {
+    function resetFormFields() {
         state.selectedMedia = [];
 
         els.scheduleAt.value = '';
@@ -318,8 +315,69 @@
         renderMediaGrid();
     }
 
+    function selectWebsiteDestination(focusUrl = true) {
+        state.destinationSelected = true;
+        els.websiteDestination.classList.add('selected');
+        els.websiteDestination.setAttribute('aria-pressed', 'true');
+        els.websiteFields.hidden = false;
+        els.mediaLibraryPanel.hidden = false;
+        els.composerGrid.classList.add('destination-active');
+
+        if (!state.config?.authenticated) {
+            const message = configMessage(state.config);
+            els.mediaGrid.innerHTML = `<div class="empty" style="grid-column:1/-1">${escapeHtml(message)}</div>`;
+            toast(message, 'error');
+            return;
+        }
+
+        loadMedia(true);
+        if (focusUrl) els.websiteUrl.focus();
+    }
+
+    function unselectWebsiteDestination() {
+        state.destinationSelected = false;
+        state.selectedMedia = [];
+        state.media.clear();
+        state.mediaCursor = null;
+        state.mediaRequestId += 1;
+
+        els.scheduleAt.value = '';
+        els.websiteUrl.value = '';
+        els.headline.value = '';
+        els.mediaSearch.value = '';
+        els.websiteDestination.classList.remove('selected');
+        els.websiteDestination.setAttribute('aria-pressed', 'false');
+        els.websiteFields.hidden = true;
+        els.mediaLibraryPanel.hidden = true;
+        els.composerGrid.classList.remove('destination-active');
+        els.loadMoreMediaBtn.style.display = 'none';
+        els.mediaGrid.innerHTML = '';
+        renderSelected();
+    }
+
+    function toggleWebsiteDestination() {
+        if (state.destinationSelected) {
+            unselectWebsiteDestination();
+            return;
+        }
+
+        selectWebsiteDestination(true);
+    }
+
+    function websiteDomainValue() {
+        return els.websiteUrl.value
+            .trim()
+            .replace(/^https?:\/\//i, '')
+            .replace(/^\/+/, '');
+    }
+
     function getFormPayload() {
-        const websiteUrl = els.websiteUrl.value.trim();
+        if (!state.destinationSelected) {
+            throw new Error('Select Website as the destination.');
+        }
+
+        const websiteDomain = websiteDomainValue();
+        const websiteUrl = websiteDomain ? `https://${websiteDomain}` : '';
         const headline = els.headline.value.trim();
 
         if ((websiteUrl || headline) && (!websiteUrl || !headline)) {
@@ -371,7 +429,7 @@
                 'success'
             );
 
-            resetForm();
+            resetFormFields();
         } catch (error) {
             toast(error.message, 'error');
         } finally {
@@ -390,21 +448,23 @@
 
             if (!state.config.authenticated) {
                 const message = configMessage(state.config);
-                els.mediaGrid.innerHTML = `<div class="empty" style="grid-column:1/-1">${escapeHtml(message)}</div>`;
                 toast(message, 'error');
-                return;
             }
         } catch (error) {
             toast(error.message, 'error');
             return;
         }
 
-        loadMedia(true);
     }
 
     els.mediaGrid.addEventListener('click', event => {
         const card = event.target.closest('[data-media-key]');
         if (card) toggleMedia(card.dataset.mediaKey);
+    });
+
+    els.websiteDestination.addEventListener('click', toggleWebsiteDestination);
+    els.websiteUrl.addEventListener('blur', () => {
+        els.websiteUrl.value = websiteDomainValue();
     });
 
     els.selectedStrip.addEventListener('click', event => {

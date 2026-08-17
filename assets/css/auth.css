@@ -26,8 +26,10 @@
     color: #991b1b;
 }
 
-.auth-submit {
-    width: 100%;
-    justify-content: center;
+.auth-card .field label {
+    font-size: 12px;
 }
 
+.auth-submit {
+    margin-top: 7px;
+}

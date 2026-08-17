@@ -8,7 +8,6 @@
 
     const $ = selector => document.querySelector(selector);
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
-    const canEditAccounts = document.body.dataset.canEditAccounts === 'true';
     const els = {
         form: $('#accountForm'),
         formTitle: $('#accountFormTitle'),
@@ -20,6 +19,7 @@
         tableBody: $('#accountTableBody'),
         status: $('#status')
     };
+    const canEditAccounts = els.form !== null;
 
     async function api(url, options = {}) {
         const response = await fetch(url, {
@@ -59,6 +59,8 @@
     }
 
     function setLoading(loading) {
+        if (!els.saveBtn) return;
+
         els.saveBtn.disabled = loading;
         els.saveBtn.textContent = loading
             ? 'Saving…'
@@ -66,6 +68,8 @@
     }
 
     function resetForm() {
+        if (!els.form) return;
+
         els.form.reset();
         els.entityId.value = '';
         els.formTitle.textContent = 'Add account';
@@ -80,12 +84,12 @@
                 <td>${escapeHtml(user.user_id)}</td>
                 <td><span class="session-status ${user.cookie_configured ? 'ok' : 'missing'}">${user.cookie_configured ? 'Configured' : 'Missing'}</span></td>
                 <td>${escapeHtml(user.updated_at || '')}</td>
-                <td>
-                    ${canEditAccounts ? `<div class="table-actions">
+                ${canEditAccounts ? `<td>
+                    <div class="table-actions">
                         <button class="small-btn" type="button" data-edit="${user.entity_id}">Edit</button>
                         <button class="small-btn danger-btn" type="button" data-delete="${user.entity_id}">Delete</button>
-                    </div>` : '—'}
-                </td>
+                    </div>
+                </td>` : ''}
             </tr>
         `).join('');
     }
@@ -96,29 +100,31 @@
         render();
     }
 
-    els.form.addEventListener('submit', async event => {
-        event.preventDefault();
-        const entityId = Number(els.entityId.value || 0);
-        setLoading(true);
+    if (els.form) {
+        els.form.addEventListener('submit', async event => {
+            event.preventDefault();
+            const entityId = Number(els.entityId.value || 0);
+            setLoading(true);
 
-        try {
-            await api(entityId ? `api/users/${entityId}` : 'api/users', {
-                method: entityId ? 'PUT' : 'POST',
-                body: JSON.stringify({
-                    account_id: els.accountId.value.trim(),
-                    user_id: els.userId.value.trim(),
-                    cookie: els.cookie.value.trim()
-                })
-            });
-            resetForm();
-            await loadUsers();
-            toast(entityId ? 'Account updated.' : 'Account added.', 'success');
-        } catch (error) {
-            toast(error.message, 'error');
-        } finally {
-            setLoading(false);
-        }
-    });
+            try {
+                await api(entityId ? `api/users/${entityId}` : 'api/users', {
+                    method: entityId ? 'PUT' : 'POST',
+                    body: JSON.stringify({
+                        account_id: els.accountId.value.trim(),
+                        user_id: els.userId.value.trim(),
+                        cookie: els.cookie.value.trim()
+                    })
+                });
+                resetForm();
+                await loadUsers();
+                toast(entityId ? 'Account updated.' : 'Account added.', 'success');
+            } catch (error) {
+                toast(error.message, 'error');
+            } finally {
+                setLoading(false);
+            }
+        });
+    }
 
     els.tableBody.addEventListener('click', async event => {
         const edit = event.target.closest('[data-edit]');

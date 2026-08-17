@@ -101,7 +101,7 @@ Flight::route('GET /api/users', static function () use ($requireAccountApi, $con
     $controller->index();
 });
 Flight::route('POST /api/users', static function () use ($requireAccountApi, $controller): void {
-    $requireAccountApi(true);
+    $requireAccountApi(true, true);
     $controller->create();
 });
 Flight::route('GET /api/users/@id', static function (string $id) use ($requireAccountApi, $controller): void {

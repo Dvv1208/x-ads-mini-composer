@@ -1,8 +1,8 @@
 @import url('./css/base.css');
-@import url('./css/components.css?v=20260817-2');
+@import url('./css/components.css');
 @import url('./css/composer.css');
-@import url('./css/media.css?v=20260817-2');
+@import url('./css/media.css');
 @import url('./css/scheduled-posts.css');
 @import url('./css/admin.css');
 @import url('./css/auth.css');
-@import url('./css/responsive.css?v=20260817-2');
+@import url('./css/responsive.css');

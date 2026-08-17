@@ -24,7 +24,7 @@
     place-items: center;
     border-radius: 12px;
     background: #0f1419;
-    color: #fff;
+    color: var(--panel);
     font-size: 21px;
     font-weight: 700;
 }
@@ -68,7 +68,7 @@ h1 {
     place-items: center;
     border-radius: 50%;
     background: #0f1419;
-    color: #fff;
+    color: var(--panel);
     font-size: 13px;
     font-weight: 750;
 }
@@ -110,17 +110,6 @@ h1 {
     text-decoration: none;
 }
 
-.logout-btn {
-    border-color: transparent;
-    background: transparent;
-    color: #536471;
-}
-
-.logout-btn:hover {
-    background: rgba(244, 33, 46, .08);
-    color: #b91c1c;
-}
-
 .account-bar {
     display: grid;
     grid-template-columns: auto minmax(320px, 1fr);
@@ -141,7 +130,7 @@ h1 {
 .account-pill {
     padding: 0;
     border: 1px solid var(--line);
-    background: #fff;
+    background: var(--panel);
     box-shadow: none;
 }
 
@@ -223,7 +212,7 @@ input[type="datetime-local"] {
     width: 100%;
     border: 1px solid var(--line);
     border-radius: 6px;
-    background: #fff;
+    background: var(--panel);
     color: var(--text);
     height: 32px;
     padding: 0 9px;
@@ -251,22 +240,22 @@ textarea {
 }
 
 .btn {
-    border: 1px solid var(--line);
+    border: 1px solid var(--btn-primary);
     border-radius: 6px;
     padding: 7px 15px;
-    background: #fff;
-    color: var(--text);
+    background: var(--btn-primary);
+    color: var(--panel);
     font-weight: 700;
 }
 
 .btn:hover {
-    background: var(--soft);
+    background: var(--btn-primary-hover);
 }
 
 .btn-primary {
     border-color: var(--btn-primary);
     background: var(--btn-primary);
-    color: #fff;
+    color: var(--panel);
     width: 100%;
 }
 
@@ -292,7 +281,7 @@ textarea {
     padding: 12px 14px;
     border-radius: 12px;
     background: #0f1419;
-    color: #fff;
+    color: var(--panel);
     box-shadow: var(--shadow);
     opacity: 0;
     transform: translateY(10px);

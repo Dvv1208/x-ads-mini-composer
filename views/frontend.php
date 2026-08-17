@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
     <title>X Ads Mini Composer</title>
-    <link rel="stylesheet" href="assets/app.css?v=20260817-2">
+    <link rel="stylesheet" href="assets/app.css">
 </head>
 
 <body>
@@ -53,42 +53,71 @@
 
         <div class="panel">
             <section class="view active" id="view-composer">
-                <div class="composer-grid">
+                <div class="composer-grid" id="composerGrid">
                     <div class="form-side">
-                        <div class="field">
-                            <label for="scheduleAt">
-                                Schedule
-                                <span class="hint">optional · defaults to +1 minute</span>
-                            </label>
-                            <input id="scheduleAt" type="datetime-local" step="60">
+                        <div class="destination-block">
+                            <div class="section-label">Destination</div>
+                            <button
+                                class="destination-option"
+                                id="websiteDestination"
+                                type="button"
+                                aria-pressed="false"
+                                aria-controls="websiteFields"
+                            >
+                                <span class="destination-copy">
+                                    <strong>Website</strong>
+                                    <small>Include a call to action to your website.</small>
+                                </span>
+                                <span class="destination-check" aria-hidden="true">✓</span>
+                            </button>
                         </div>
 
-                        <div class="field">
-                            <label for="websiteUrl">Website URL</label>
-                            <input id="websiteUrl" type="text" placeholder="https://example.com" autocomplete="on">
-                        </div>
-
-                        <div class="field">
-                            <label for="headline">Headline <span class="hint">required with website</span></label>
-                            <input id="headline" type="text" maxlength="80" placeholder="Enter a headline" autocomplete="on">
-                        </div>
-
-                        <div class="field">
-                            <label>
-                                Selected media
-                                <span class="hint" id="mediaCount">0 selected</span>
-                            </label>
-                            <div class="selected-strip" id="selectedStrip">
-                                <span class="selected-empty">Choose media from the library.</span>
+                        <div class="website-fields" id="websiteFields" hidden>
+                            <div class="field">
+                                <label for="websiteUrl">Website URL <span class="required">*</span></label>
+                                <div class="url-input-group">
+                                    <span class="url-prefix">https://</span>
+                                    <input
+                                        id="websiteUrl"
+                                        type="text"
+                                        placeholder="example.com"
+                                        inputmode="url"
+                                        autocomplete="url"
+                                        spellcheck="false"
+                                    >
+                                </div>
                             </div>
-                        </div>
 
-                        <div class="actions">
-                            <button class="btn btn-primary" id="saveBtn">Schedule</button>
+                            <div class="field">
+                                <label for="headline">Headline <span class="required">*</span></label>
+                                <input id="headline" type="text" maxlength="80" placeholder="Enter a headline" autocomplete="on">
+                            </div>
+
+                            <div class="field">
+                                <label>
+                                    <span>Media <span class="required">*</span> <span class="hint inline-hint">Required for card ads</span></span>
+                                    <span class="hint" id="mediaCount">0 selected</span>
+                                </label>
+                                <div class="selected-strip" id="selectedStrip">
+                                    <span class="selected-empty">Choose media from the library.</span>
+                                </div>
+                            </div>
+
+                            <div class="field">
+                                <label for="scheduleAt">
+                                    Schedule
+                                    <span class="hint">optional · defaults to +1 minute</span>
+                                </label>
+                                <input id="scheduleAt" type="datetime-local" step="60">
+                            </div>
+
+                            <div class="actions">
+                                <button class="btn btn-primary" id="saveBtn">Schedule</button>
+                            </div>
                         </div>
                     </div>
 
-                    <aside class="media-side">
+                    <aside class="media-side" id="mediaLibraryPanel" hidden>
                         <div class="media-head">
                             <h2>Media Library</h2>
                             <button class="btn" id="refreshMediaBtn">Refresh</button>

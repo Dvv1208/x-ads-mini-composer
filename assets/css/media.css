@@ -87,7 +87,7 @@
     left: 6px;
     right: 42px;
     bottom: 7px;
-    color: #fff;
+    color: var(--panel);
     font-size: 10px;
     line-height: 1.2;
     overflow: hidden;
@@ -104,7 +104,7 @@
     padding: 2px 5px;
     border-radius: 999px;
     background: rgba(15, 20, 25, .68);
-    color: #fff;
+    color: var(--panel);
     font-size: 10px;
     line-height: 1.2;
 }
@@ -119,7 +119,7 @@
     left: 6px;
     right: 6px;
     bottom: 5px;
-    color: #fff;
+    color: var(--panel);
     font-size: 9px;
     font-style: italic;
     line-height: 1.2;
@@ -140,7 +140,7 @@
     display: none;
     place-items: center;
     background: var(--blue);
-    color: #fff;
+    color: var(--panel);
     font-size: 12px;
 }
 

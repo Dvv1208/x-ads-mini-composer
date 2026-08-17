@@ -6,10 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
     <title>X Ads Admin</title>
-    <link rel="stylesheet" href="assets/app.css?v=20260817-2">
+    <link rel="stylesheet" href="assets/app.css">
 </head>
 
-<body data-can-edit-accounts="<?= $canEditAccounts ? 'true' : 'false' ?>">
+<body>
     <div class="shell admin-shell">
         <div class="topbar">
             <div class="brand">
@@ -41,7 +41,8 @@
         </div>
 
         <div class="panel admin-panel">
-            <div class="account-manager-body">
+            <div class="account-manager-body<?= $canEditAccounts ? '' : ' read-only' ?>">
+                <?php if ($canEditAccounts): ?>
                 <form id="accountForm" class="account-form" autocomplete="on">
                     <h2 id="accountFormTitle">Add account</h2>
                     <input id="accountEntityId" type="hidden">
@@ -61,6 +62,7 @@
                         <button class="btn btn-primary" id="accountSaveBtn" type="submit">Add account</button>
                     </div>
                 </form>
+                <?php endif; ?>
 
                 <div class="account-table-wrap">
                     <table class="account-table">
@@ -71,7 +73,9 @@
                                 <th>User ID</th>
                                 <th>Session</th>
                                 <th>Updated</th>
-                                <th>Actions</th>
+                                <?php if ($canEditAccounts): ?>
+                                    <th>Actions</th>
+                                <?php endif; ?>
                             </tr>
                         </thead>
                         <tbody id="accountTableBody"></tbody>

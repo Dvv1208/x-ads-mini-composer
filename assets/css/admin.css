@@ -20,6 +20,10 @@
     align-items: start;
 }
 
+.account-manager-body.read-only {
+    grid-template-columns: minmax(0, 1fr);
+}
+
 .admin-panel {
     padding: 0;
     overflow: visible;
@@ -120,7 +124,7 @@
     width: 100%;
     border: 1px solid var(--line);
     border-radius: 11px;
-    background: #fff;
+    background: var(--panel);
     color: var(--text);
     padding: 11px 12px;
     outline: none;
