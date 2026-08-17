@@ -1,12 +1,14 @@
 <!doctype html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
     <title>X Ads Admin</title>
-    <link rel="stylesheet" href="assets/app.css?v=20260816-1">
+    <link rel="stylesheet" href="assets/app.css?v=20260817-2">
 </head>
+
 <body data-can-edit-accounts="<?= $canEditAccounts ? 'true' : 'false' ?>">
     <div class="shell admin-shell">
         <div class="topbar">
@@ -18,11 +20,22 @@
                 </div>
             </div>
             <div class="header-actions">
-                <a class="small-btn link-btn" href="./">Composer</a>
-                <span class="signed-user"><?= htmlspecialchars((string)$currentUser['username'], ENT_QUOTES, 'UTF-8') ?></span>
+                <div class="user-identity">
+                    <span class="user-avatar" aria-hidden="true"><?= htmlspecialchars(strtoupper(substr((string)$currentUser['username'], 0, 1)), ENT_QUOTES, 'UTF-8') ?></span>
+                    <span class="user-details">
+                        <strong><?= htmlspecialchars((string)$currentUser['username'], ENT_QUOTES, 'UTF-8') ?></strong>
+                        <small><?= htmlspecialchars(match ($currentUser['role'] ?? 'user') {
+                            'admin' => 'Administrator',
+                            'editor' => 'Editor',
+                            default => 'User',
+                        }, ENT_QUOTES, 'UTF-8') ?></small>
+                    </span>
+                </div>
+                <span class="header-divider" aria-hidden="true"></span>
+                <a class="btn header-btn" href="./">Composer</a>
                 <form method="post" action="logout">
                     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
-                    <button class="small-btn" type="submit">Log out</button>
+                    <button class="btn header-btn logout-btn" type="submit">Log out</button>
                 </form>
             </div>
         </div>
@@ -40,9 +53,12 @@
                         <label for="userIdInput">User ID</label>
                         <input id="userIdInput" name="user_id" type="text" inputmode="numeric" maxlength="32" required autocomplete="on">
                     </div>
+                    <div class="field">
+                        <label for="accountCookieInput">X Cookie</label>
+                        <textarea id="accountCookieInput" name="cookie" rows="7" spellcheck="false" autocomplete="off" placeholder="auth_token=...; ct0=...; ..."></textarea>
+                    </div>
                     <div class="account-form-actions">
                         <button class="btn btn-primary" id="accountSaveBtn" type="submit">Add account</button>
-                        <button class="small-btn" id="accountCancelBtn" type="button" hidden>Cancel</button>
                     </div>
                 </form>
 
@@ -53,6 +69,7 @@
                                 <th>ID</th>
                                 <th>Account ID</th>
                                 <th>User ID</th>
+                                <th>Session</th>
                                 <th>Updated</th>
                                 <th>Actions</th>
                             </tr>
@@ -65,6 +82,7 @@
     </div>
 
     <div class="status" id="status"></div>
-    <script src="assets/admin.js?v=20260817-1" defer></script>
+    <script src="assets/admin.js" defer></script>
 </body>
+
 </html>

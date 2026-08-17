@@ -1,134 +1,72 @@
-# X Ads Mini Composer
+# X Ads Mini Composer — Multi-account Session Edition
 
-Small PHP application for creating scheduled X Ads Website Card posts.
+This build supports multiple X Ads accounts while keeping the existing `OAuth2Session`/browser-cookie authentication flow.
 
-## Requirements
+## Authentication model
 
-- PHP 8.1+
-- PHP extensions: `curl`, `pdo_mysql`, `mbstring`
-- MySQL or MariaDB
-- Composer 2 for local installation
-- HTTPS when deployed to hosting
-- A working authenticated X Ads browser session
+- `bearer` remains global in `config.php`.
+- Every row in the `user` table stores its own X browser Cookie in `x_cookie`.
+- `ct0` is extracted automatically from the selected account's Cookie.
+- The frontend never receives the Cookie value.
+- Switching the account selector changes the Cookie/session used for Media Library, Cards, previews and Scheduled Tweets.
 
-## Local database
+## Upgrade an existing database
 
-The local database is `if0_42654253_x_ads`. It contains:
-
-- `admin_user` for application login and roles.
-- `user` for X Ads account/user mappings.
-
-The seeded application users are `dvv1208` with role `admin` and `ken` with
-role `editor`. Passwords are stored only as `password_hash()` results, never
-Base64 or plaintext.
-
-The X Ads mapping table contains:
-
-```text
-entity_id | account_id | user_id
-```
-
-The included account is:
-
-```text
-1 | 18ce55nu7l7 | 1855582736
-```
-
-To rebuild the table, select `if0_42654253_x_ads` in phpMyAdmin and import
-`database.sql`.
-
-Add another X Ads account with:
+Run once:
 
 ```sql
-INSERT INTO `user` (`account_id`, `user_id`)
-VALUES ('ACCOUNT_ID', 'USER_ID');
+ALTER TABLE `user`
+    ADD COLUMN `x_cookie` TEXT NULL AFTER `user_id`;
 ```
 
-The browser sends only `entity_id`. For every media, card, or schedule request,
-`api.php` resolves `account_id` and `user_id` from MySQL.
-
-## Configuration
-
-Edit `config.php`:
-
-```php
-'database' => [
-    'host' => '127.0.0.1',
-    'port' => 3306,
-    'name' => 'if0_42654253_x_ads',
-    'username' => 'admin',
-    'password' => 'admin',
-    'charset' => 'utf8mb4',
-],
-```
-
-On cPanel, replace the database username and password with the MySQL user
-assigned to `if0_42654253_x_ads`. Some hosts require `localhost` instead of
-`127.0.0.1`.
-
-Keep the X `bearer` and complete Cookie request header in `config.php`.
-The application extracts `ct0` directly from that Cookie.
-If X returns 401 or 403, copy a fresh Cookie header from a working
-`ads-api.x.com` browser request.
-
-## Run locally
-
-```bash
-composer install --no-dev --optimize-autoloader
-php -S 127.0.0.1:8888 router.php
-```
-
-Open `http://127.0.0.1:8888`.
-
-Application pages:
+The same statement is included in:
 
 ```text
-/login  Shared login
-/       Authenticated Composer frontend
-/admin  Admin/editor X Ads account management
+migration_multi_account_cookie.sql
 ```
 
-## Deploy with cPanel, phpMyAdmin and FTP
+Then open **Admin** and edit each account. Paste that account's complete X Cookie header.
 
-1. Create `if0_42654253_x_ads` in cPanel MySQL Databases.
-2. Create a MySQL user and grant it all privileges on that database.
-3. Select the database in phpMyAdmin and import `database.sql`.
-4. Update the database credentials in `config.php`.
-5. Run Composer locally and upload the whole project, including `vendor`,
-   `composer.json`, and `composer.lock`, into `htdocs` using FTP.
-6. Enable HTTPS.
-7. Confirm that Apache `mod_rewrite` and PHP sessions are enabled.
-8. Sign in and verify both `/` and `/admin` before using the X API.
+When editing an account later, leave the Cookie field blank to keep the existing value.
 
-No cron is needed. X executes the scheduled post.
+## Add another account
 
-## Current behavior
+Open `/admin` and enter:
 
-- Frontend, admin, `api.php`, and CRUD routes all require a valid PHP session.
-- Role `admin` can create, edit, and delete X Ads accounts and create content.
-- Role `editor` can create content and add X Ads accounts, but cannot edit or
-  delete existing accounts.
-- State-changing requests require a per-session CSRF token.
-- Five failed logins lock that account for 15 minutes.
-- Sessions expire after eight hours of inactivity.
-- FlightPHP Core routes REST CRUD for accounts.
-- `GET /api/users` lists accounts.
-- `POST /api/users` creates an account.
-- `GET /api/users/:id` reads one account.
-- `PUT /api/users/:id` updates an account.
-- `DELETE /api/users/:id` deletes an account; the last account is protected.
-- Accounts are loaded from MySQL and selectable from the header.
-- Media Library is loaded for the selected account.
-- Website Card uses one selected media item.
-- Scheduled posts use `nullcast=false`.
-- Empty schedule input falls back to approximately one minute ahead.
-- Custom schedule input is interpreted as Asia/Ho_Chi_Minh and converted once
-  to UTC for X.
-- Post text is generated as `Wataa 👅 BASE62_ID`.
+- Account ID
+- User ID
+- X Cookie
+
+The Cookie should be copied from a currently authenticated request to `ads-api.x.com` and must contain at least `ct0` plus the X session credentials required by the browser session.
+
+The account table only shows whether a Cookie is configured. The Cookie itself is never returned by the account CRUD API.
+
+## Running with Apache
+
+Example:
+
+```apache
+<VirtualHost *:8895>
+    ServerName x.local
+    DocumentRoot /var/www/x-ads-mini-composer
+
+    <Directory /var/www/x-ads-mini-composer>
+        Options FollowSymLinks
+        AllowOverride All
+        DirectoryIndex router.php index.php index.html
+        Require all granted
+    </Directory>
+</VirtualHost>
+```
+
+Ensure Apache listens on `8895`, then visit:
+
+```text
+http://x.local:8895/
+```
 
 ## Security
 
-`config.php` contains an authenticated X session. Do not commit it or share it.
-The included `.htaccess` blocks direct web access to configuration and SQL files,
-and the application enforces login on both pages and APIs. Use HTTPS in production
-so credentials and session cookies are encrypted in transit.
+The `x_cookie` value is an authenticated X session credential. Do not expose it in logs, Git, frontend JSON, database dumps, screenshots, or public backups.
+
+If an X session expires, edit only that account in Admin and paste a fresh Cookie. Other accounts remain unaffected.

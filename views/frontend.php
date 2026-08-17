@@ -1,12 +1,14 @@
 <!doctype html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
     <title>X Ads Mini Composer</title>
-    <link rel="stylesheet" href="assets/app.css?v=20260816-2">
+    <link rel="stylesheet" href="assets/app.css?v=20260817-2">
 </head>
+
 <body>
     <div class="shell">
         <div class="topbar">
@@ -18,19 +20,30 @@
                 </div>
             </div>
             <div class="header-actions">
+                <div class="user-identity">
+                    <span class="user-avatar" aria-hidden="true"><?= htmlspecialchars(strtoupper(substr((string)$currentUser['username'], 0, 1)), ENT_QUOTES, 'UTF-8') ?></span>
+                    <span class="user-details">
+                        <strong><?= htmlspecialchars((string)$currentUser['username'], ENT_QUOTES, 'UTF-8') ?></strong>
+                        <small><?= htmlspecialchars(match ($currentUser['role'] ?? 'user') {
+                            'admin' => 'Administrator',
+                            'editor' => 'Editor',
+                            default => 'User',
+                        }, ENT_QUOTES, 'UTF-8') ?></small>
+                    </span>
+                </div>
+                <span class="header-divider" aria-hidden="true"></span>
                 <?php if (in_array(($currentUser['role'] ?? ''), ['admin', 'editor'], true)): ?>
-                    <a class="small-btn link-btn" href="admin">Admin</a>
+                    <a class="btn header-btn" href="admin">Admin</a>
                 <?php endif; ?>
-                <span class="signed-user"><?= htmlspecialchars((string)$currentUser['username'], ENT_QUOTES, 'UTF-8') ?></span>
                 <form method="post" action="logout">
                     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
-                    <button class="small-btn" type="submit">Log out</button>
+                    <button class="btn header-btn logout-btn" type="submit">Log out</button>
                 </form>
             </div>
         </div>
 
         <div class="account-bar">
-            <label for="accountSelect">X Ads account</label>
+            <label for="accountSelect">X Ads account: </label>
             <div class="account-pill">
                 <select id="accountSelect" aria-label="X Ads account">
                     <option value="">Loading account…</option>
@@ -78,12 +91,12 @@
                     <aside class="media-side">
                         <div class="media-head">
                             <h2>Media Library</h2>
-                            <button class="small-btn" id="refreshMediaBtn">Refresh</button>
+                            <button class="btn" id="refreshMediaBtn">Refresh</button>
                         </div>
 
                         <div class="media-toolbar">
                             <input type="search" id="mediaSearch" placeholder="Search media…" autocomplete="on">
-                            <button class="small-btn" id="mediaSearchBtn">Search</button>
+                            <button class="btn" id="mediaSearchBtn">Search</button>
                         </div>
 
                         <div id="mediaGrid" class="media-grid"></div>
@@ -95,6 +108,7 @@
     </div>
 
     <div class="status" id="status"></div>
-    <script src="assets/app.js?v=20260817-1" defer></script>
+    <script src="assets/app.js" defer></script>
 </body>
+
 </html>

@@ -1,0 +1,63 @@
+.post-row {
+    display: grid;
+    grid-template-columns: 92px minmax(0, 1fr) auto;
+    gap: 14px;
+    align-items: center;
+    padding: 13px;
+    border: 1px solid var(--line);
+    border-radius: 13px;
+    background: #fff;
+}
+
+.post-date {
+    color: var(--text);
+    font-size: 12px;
+    line-height: 1.35;
+}
+
+.post-date strong {
+    display: block;
+    color: var(--text);
+    font-size: 13px;
+}
+
+.post-text {
+    min-width: 0;
+}
+
+.post-text .main {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font-size: 14px;
+}
+
+.post-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+    color: var(--text);
+    font-size: 11px;
+}
+
+.row-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.small-btn {
+    border: 1px solid var(--line);
+    background: #fff;
+    border-radius: 6px;
+    padding: 7px 15px;
+    font-weight: 650;
+    color: var(--text);
+}
+
+.small-btn:hover {
+    background: var(--soft);
+}
+
+.small-btn.delete {
+    color: var(--danger);
+}

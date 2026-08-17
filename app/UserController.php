@@ -22,7 +22,6 @@ final class UserController
         $user = $this->users->find($this->entityId($id));
         if ($user === null) {
             $this->json(['error' => 'Account was not found.'], 404);
-            return;
         }
 
         $this->json(['data' => $user]);
@@ -30,10 +29,10 @@ final class UserController
 
     public function create(): void
     {
-        [$accountId, $userId] = $this->validatedBody();
+        [$accountId, $userId, $cookie] = $this->validatedBody(true);
 
         try {
-            $this->json(['data' => $this->users->create($accountId, $userId)], 201);
+            $this->json(['data' => $this->users->create($accountId, $userId, (string)$cookie)], 201);
         } catch (PDOException $exception) {
             $this->databaseError($exception);
         }
@@ -44,13 +43,12 @@ final class UserController
         $entityId = $this->entityId($id);
         if ($this->users->find($entityId) === null) {
             $this->json(['error' => 'Account was not found.'], 404);
-            return;
         }
 
-        [$accountId, $userId] = $this->validatedBody();
+        [$accountId, $userId, $cookie] = $this->validatedBody(false);
 
         try {
-            $this->json(['data' => $this->users->update($entityId, $accountId, $userId)]);
+            $this->json(['data' => $this->users->update($entityId, $accountId, $userId, $cookie)]);
         } catch (PDOException $exception) {
             $this->databaseError($exception);
         }
@@ -64,13 +62,12 @@ final class UserController
 
         if (!$this->users->delete($this->entityId($id))) {
             $this->json(['error' => 'Account was not found.'], 404);
-            return;
         }
 
         $this->json(['data' => ['deleted' => true]]);
     }
 
-    private function validatedBody(): array
+    private function validatedBody(bool $creating): array
     {
         $raw = file_get_contents('php://input');
         $data = json_decode($raw === false ? '' : $raw, true);
@@ -81,6 +78,7 @@ final class UserController
 
         $accountId = trim((string)($data['account_id'] ?? ''));
         $userId = trim((string)($data['user_id'] ?? ''));
+        $cookieInput = trim((string)($data['cookie'] ?? ''));
 
         if (!preg_match('/^[A-Za-z0-9_-]{1,32}$/', $accountId)) {
             $this->json(['error' => 'Account ID must contain 1-32 letters, numbers, underscores, or hyphens.'], 422);
@@ -90,7 +88,33 @@ final class UserController
             $this->json(['error' => 'User ID must contain 1-32 digits.'], 422);
         }
 
-        return [$accountId, $userId];
+        if ($creating && $cookieInput === '') {
+            $this->json(['error' => 'X Cookie is required for a new account.'], 422);
+        }
+
+        // Empty cookie while editing means "keep the existing cookie".
+        $cookie = $cookieInput === '' ? null : $this->normalizeCookie($cookieInput);
+
+        if ($cookie !== null && !$this->hasCt0($cookie)) {
+            $this->json(['error' => 'X Cookie must contain a ct0 value.'], 422);
+        }
+
+        return [$accountId, $userId, $cookie];
+    }
+
+    private function normalizeCookie(string $cookie): string
+    {
+        $cookie = trim($cookie);
+        if (stripos($cookie, 'cookie:') === 0) {
+            $cookie = trim(substr($cookie, strlen('cookie:')));
+        }
+
+        return $cookie;
+    }
+
+    private function hasCt0(string $cookie): bool
+    {
+        return preg_match('/(?:^|;\s*)ct0=([^;]+)/', $cookie) === 1;
     }
 
     private function entityId(string $id): int
@@ -106,7 +130,6 @@ final class UserController
     {
         if ($exception->getCode() === '23000') {
             $this->json(['error' => 'This account ID and user ID already exist.'], 409);
-            return;
         }
 
         error_log('X Ads CRUD failed: ' . $exception->getMessage());

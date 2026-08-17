@@ -96,7 +96,7 @@ function userAccounts(array $config): array
 {
     try {
         $statement = database($config)->query(
-            'SELECT entity_id, account_id, user_id FROM `user` ORDER BY entity_id ASC'
+            'SELECT entity_id, account_id, user_id, x_cookie FROM `user` ORDER BY entity_id ASC'
         );
 
         return $statement->fetchAll();
@@ -191,7 +191,7 @@ function xRequest(
     if ($ct0 === null || $ct0 === '') {
         respond([
             'error' => 'The configured Cookie does not contain ct0.',
-            'hint' => 'Copy a complete X Cookie request header containing ct0 into config.php.',
+            'hint' => 'Open Admin and update the selected account with a complete X Cookie containing ct0.',
         ], 500);
     }
 
@@ -462,6 +462,10 @@ $entityId = (int)$selectedAccount['entity_id'];
 $accountId = (string)$selectedAccount['account_id'];
 $userId = (string)$selectedAccount['user_id'];
 
+// Authentication is account-specific. The bearer remains global, while each
+// X Ads account uses its own browser session Cookie (and therefore its own ct0).
+$config['cookie'] = (string)($selectedAccount['x_cookie'] ?? '');
+
 switch ($action) {
     case 'config':
         $auth = authStatus($config);
@@ -476,6 +480,8 @@ switch ($action) {
                         'entity_id' => (int)$account['entity_id'],
                         'account_id' => (string)$account['account_id'],
                         'user_id' => (string)$account['user_id'],
+                        'cookie_configured' => trim((string)($account['x_cookie'] ?? '')) !== '',
+                        'ct0_configured' => getCt0(normalizeCookie((string)($account['x_cookie'] ?? ''))) !== null,
                     ],
                     $accounts
                 ),

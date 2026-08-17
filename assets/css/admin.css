@@ -1,0 +1,153 @@
+.account-manager {
+    margin-bottom: 14px;
+    border: 1px solid var(--line);
+    border-radius: 13px;
+    background: var(--panel);
+    box-shadow: 0 2px 12px rgba(15, 20, 25, .04);
+}
+
+.account-manager summary {
+    padding: 12px 16px;
+    cursor: pointer;
+    font-weight: 650;
+}
+
+.account-manager-body {
+    display: grid;
+    grid-template-columns: 360px minmax(0, 1fr);
+    gap: 28px;
+    padding: 24px;
+    align-items: start;
+}
+
+.admin-panel {
+    padding: 0;
+    overflow: visible;
+}
+
+.admin-shell {
+    width: min(1500px, calc(100% - 48px));
+    margin: 28px auto 70px;
+}
+
+.account-form h2 {
+    margin: 0 0 20px;
+    font-size: 20px;
+}
+
+.account-form {
+    min-width: 0;
+    padding: 20px;
+    border-radius: 14px;
+    background: var(--soft);
+}
+
+.account-form .field {
+    margin-bottom: 18px;
+}
+
+.account-form .field:last-of-type {
+    margin-bottom: 16px;
+}
+
+.account-form textarea {
+    min-height: 150px;
+    max-height: 280px;
+}
+
+.account-table-wrap {
+    width: 100%;
+    min-width: 0;
+    overflow-x: visible;
+}
+
+.account-table {
+    width: 100%;
+    table-layout: auto;
+    border-collapse: collapse;
+}
+
+.account-table th,
+.account-table td {
+    padding: 13px 12px;
+    border-bottom: 1px solid var(--line);
+    text-align: left;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.account-table th {
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.account-table th:nth-child(1),
+.account-table td:nth-child(1) {
+    width: 50px;
+}
+
+.account-table th:nth-child(2),
+.account-table td:nth-child(2) {
+    width: 150px;
+}
+
+.account-table th:nth-child(3),
+.account-table td:nth-child(3) {
+    width: 210px;
+}
+
+.account-table th:nth-child(4),
+.account-table td:nth-child(4) {
+    width: 130px;
+}
+
+.account-table th:nth-child(5),
+.account-table td:nth-child(5) {
+    width: 180px;
+}
+
+.account-table th:nth-child(6),
+.account-table td:nth-child(6) {
+    width: 150px;
+}
+
+.danger-btn {
+    color: var(--danger);
+}
+
+.account-form textarea {
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: 11px;
+    background: #fff;
+    color: var(--text);
+    padding: 11px 12px;
+    outline: none;
+    resize: vertical;
+    font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.account-form textarea:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(29, 155, 240, .12);
+}
+
+.session-status {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 3px 8px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.session-status.ok {
+    background: rgba(0, 186, 124, .12);
+    color: #087f5b;
+}
+
+.session-status.missing {
+    background: rgba(244, 33, 46, .10);
+    color: #b91c1c;
+}

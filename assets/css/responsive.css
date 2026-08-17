@@ -1,0 +1,107 @@
+@media (max-width: 1100px) {
+    .admin-shell {
+        width: min(100% - 28px, 1500px);
+    }
+
+    .account-manager-body {
+        grid-template-columns: 320px minmax(0, 1fr);
+        gap: 18px;
+        padding: 18px;
+    }
+
+    .account-table th,
+    .account-table td {
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+}
+
+@media (max-width: 900px) {
+    .account-manager-body {
+        grid-template-columns: 1fr;
+    }
+
+    .account-table-wrap {
+        overflow-x: auto;
+    }
+
+    .account-table {
+        min-width: 850px;
+    }
+
+    .composer-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .form-side {
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+    }
+
+    .media-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 620px) {
+    .shell {
+        width: min(100% - 18px, 1180px);
+        margin-top: 14px;
+    }
+
+    .admin-shell {
+        width: calc(100% - 18px);
+        margin-top: 14px;
+    }
+
+    .account-manager-body {
+        padding: 12px;
+    }
+
+    .account-form {
+        padding: 16px;
+    }
+
+    .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .header-actions {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+
+    .header-divider {
+        margin-left: auto;
+    }
+
+    .user-details strong {
+        max-width: 120px;
+    }
+
+    .account-bar {
+        justify-content: flex-start;
+    }
+
+    .two-cols {
+        grid-template-columns: 1fr;
+    }
+
+    .form-side,
+    .media-side {
+        padding: 15px;
+    }
+
+    .media-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .post-row {
+        grid-template-columns: 1fr;
+    }
+
+    .row-actions {
+        justify-content: flex-start;
+    }
+}

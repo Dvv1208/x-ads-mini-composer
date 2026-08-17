@@ -1,0 +1,33 @@
+.auth-page {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+}
+
+.auth-card {
+    width: min(420px, 100%);
+    padding: 28px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--panel);
+    box-shadow: var(--shadow);
+}
+
+.auth-brand {
+    margin-bottom: 24px;
+}
+
+.auth-error {
+    margin-bottom: 18px;
+    padding: 11px 12px;
+    border-radius: 10px;
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.auth-submit {
+    width: 100%;
+    justify-content: center;
+}
+

@@ -72,7 +72,7 @@
         const auth = config?.auth || {};
 
         if (!auth.ct0_configured) {
-            return 'The Cookie in config.php does not contain ct0.';
+            return 'The selected account does not have a valid X Cookie containing ct0. Update it in Admin.';
         }
 
         if (!auth.bearer_configured) {
@@ -131,7 +131,7 @@
     function renderAccountSelector() {
         els.accountSelect.innerHTML = state.config.accounts.map(account => `
             <option value="${account.entity_id}" ${account.entity_id === state.config.entity_id ? 'selected' : ''}>
-                Account ${escapeHtml(account.account_id)} · User ${escapeHtml(account.user_id)}
+                Account ${escapeHtml(account.account_id)} · User ${escapeHtml(account.user_id)}${account.ct0_configured ? '' : ' · Session missing'}
             </option>
         `).join('');
     }
@@ -143,11 +143,20 @@
         state.config.entity_id = account.entity_id;
         state.config.account_id = account.account_id;
         state.config.user_id = account.user_id;
+        state.config.authenticated = Boolean(account.ct0_configured && state.config.auth?.bearer_configured);
         els.accountSelect.value = String(account.entity_id);
 
         if (reloadMedia) {
             resetForm();
-            loadMedia(true);
+
+            if (!state.config.authenticated) {
+                state.media.clear();
+                state.mediaCursor = null;
+                renderMediaGrid();
+                toast('The selected account session is missing or invalid. Update its X Cookie in Admin.', 'error');
+            } else {
+                loadMedia(true);
+            }
         }
 
         return true;

@@ -15,8 +15,8 @@
         entityId: $('#accountEntityId'),
         accountId: $('#accountIdInput'),
         userId: $('#userIdInput'),
+        cookie: $('#accountCookieInput'),
         saveBtn: $('#accountSaveBtn'),
-        cancelBtn: $('#accountCancelBtn'),
         tableBody: $('#accountTableBody'),
         status: $('#status')
     };
@@ -70,7 +70,6 @@
         els.entityId.value = '';
         els.formTitle.textContent = 'Add account';
         els.saveBtn.textContent = 'Add account';
-        els.cancelBtn.hidden = true;
     }
 
     function render() {
@@ -79,6 +78,7 @@
                 <td>${user.entity_id}</td>
                 <td>${escapeHtml(user.account_id)}</td>
                 <td>${escapeHtml(user.user_id)}</td>
+                <td><span class="session-status ${user.cookie_configured ? 'ok' : 'missing'}">${user.cookie_configured ? 'Configured' : 'Missing'}</span></td>
                 <td>${escapeHtml(user.updated_at || '')}</td>
                 <td>
                     ${canEditAccounts ? `<div class="table-actions">
@@ -106,7 +106,8 @@
                 method: entityId ? 'PUT' : 'POST',
                 body: JSON.stringify({
                     account_id: els.accountId.value.trim(),
-                    user_id: els.userId.value.trim()
+                    user_id: els.userId.value.trim(),
+                    cookie: els.cookie.value.trim()
                 })
             });
             resetForm();
@@ -119,8 +120,6 @@
         }
     });
 
-    els.cancelBtn.addEventListener('click', resetForm);
-
     els.tableBody.addEventListener('click', async event => {
         const edit = event.target.closest('[data-edit]');
         const remove = event.target.closest('[data-delete]');
@@ -132,9 +131,9 @@
             els.entityId.value = user.entity_id;
             els.accountId.value = user.account_id;
             els.userId.value = user.user_id;
+            els.cookie.value = '';
             els.formTitle.textContent = 'Edit account';
             els.saveBtn.textContent = 'Save account';
-            els.cancelBtn.hidden = false;
             els.accountId.focus();
             return;
         }
