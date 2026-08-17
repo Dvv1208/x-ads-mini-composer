@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS `admin_user` (
     `entity_id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
     `username` VARCHAR(64) NOT NULL,
     `password_hash` VARCHAR(255) NOT NULL,
-    `role` ENUM('admin', 'user') NOT NULL DEFAULT 'user',
+    `role` ENUM('admin', 'editor', 'user') NOT NULL DEFAULT 'user',
     `is_active` TINYINT(1) UNSIGNED NOT NULL DEFAULT 1,
     `failed_attempts` SMALLINT UNSIGNED NOT NULL DEFAULT 0,
     `locked_until` DATETIME NULL,
@@ -13,8 +13,29 @@ CREATE TABLE IF NOT EXISTS `admin_user` (
     UNIQUE KEY `uniq_admin_username` (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+ALTER TABLE `admin_user`
+    MODIFY `role` ENUM('admin', 'editor', 'user') NOT NULL DEFAULT 'user';
+
+UPDATE `admin_user`
+SET `username` = 'dvv1208',
+    `password_hash` = '$2y$10$VySYBtHciuyBEM9XRP3ik.IpSR9vhA6.FYlKAPqmVXYK8wXzQVPie',
+    `role` = 'admin',
+    `is_active` = 1,
+    `failed_attempts` = 0,
+    `locked_until` = NULL
+WHERE `username` = 'admin';
+
 INSERT INTO `admin_user` (`username`, `password_hash`, `role`, `is_active`)
-VALUES ('admin', '$2y$10$vSAhUUGsKB0wRYYMqlCnUeDJLrcy3rTjTzhtcpekeRqUy.aKXbP1W', 'admin', 1)
+VALUES ('dvv1208', '$2y$10$VySYBtHciuyBEM9XRP3ik.IpSR9vhA6.FYlKAPqmVXYK8wXzQVPie', 'admin', 1)
+ON DUPLICATE KEY UPDATE
+    `password_hash` = VALUES(`password_hash`),
+    `role` = VALUES(`role`),
+    `is_active` = VALUES(`is_active`),
+    `failed_attempts` = 0,
+    `locked_until` = NULL;
+
+INSERT INTO `admin_user` (`username`, `password_hash`, `role`, `is_active`)
+VALUES ('ken', '$2y$10$fNpZPr8PLTBdXGEVh372iOf3MO6UTlT3rRJtdRe7VgJQzopPrCp.S', 'editor', 1)
 ON DUPLICATE KEY UPDATE
     `password_hash` = VALUES(`password_hash`),
     `role` = VALUES(`role`),

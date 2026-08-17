@@ -8,6 +8,7 @@
 
     const $ = selector => document.querySelector(selector);
     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    const canEditAccounts = document.body.dataset.canEditAccounts === 'true';
     const els = {
         form: $('#accountForm'),
         formTitle: $('#accountFormTitle'),
@@ -80,10 +81,10 @@
                 <td>${escapeHtml(user.user_id)}</td>
                 <td>${escapeHtml(user.updated_at || '')}</td>
                 <td>
-                    <div class="table-actions">
+                    ${canEditAccounts ? `<div class="table-actions">
                         <button class="small-btn" type="button" data-edit="${user.entity_id}">Edit</button>
                         <button class="small-btn danger-btn" type="button" data-delete="${user.entity_id}">Delete</button>
-                    </div>
+                    </div>` : '—'}
                 </td>
             </tr>
         `).join('');

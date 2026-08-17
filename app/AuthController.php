@@ -62,7 +62,7 @@ final class AuthController
         $this->users->recordLogin((int)$user['entity_id']);
         Auth::login($user);
 
-        if ($target === 'admin' && !Auth::isAdmin()) {
+        if ($target === 'admin' && !Auth::canManageAccounts()) {
             $target = './';
         }
 

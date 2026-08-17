@@ -18,9 +18,9 @@ The local database is `if0_42654253_x_ads`. It contains:
 - `admin_user` for application login and roles.
 - `user` for X Ads account/user mappings.
 
-The seeded application login is username `admin`. Its initial password is the
-private value supplied during installation. The database stores only a
-`password_hash()` result, never Base64 or plaintext.
+The seeded application users are `dvv1208` with role `admin` and `ken` with
+role `editor`. Passwords are stored only as `password_hash()` results, never
+Base64 or plaintext.
 
 The X Ads mapping table contains:
 
@@ -85,7 +85,7 @@ Application pages:
 ```text
 /login  Shared login
 /       Authenticated Composer frontend
-/admin  Administrator-only X Ads account management
+/admin  Admin/editor X Ads account management
 ```
 
 ## Deploy with cPanel, phpMyAdmin and FTP
@@ -105,7 +105,9 @@ No cron is needed. X executes the scheduled post.
 ## Current behavior
 
 - Frontend, admin, `api.php`, and CRUD routes all require a valid PHP session.
-- Admin routes require an `admin_user` row with role `admin`.
+- Role `admin` can create, edit, and delete X Ads accounts and create content.
+- Role `editor` can create content and add X Ads accounts, but cannot edit or
+  delete existing accounts.
 - State-changing requests require a per-session CSRF token.
 - Five failed logins lock that account for 15 minutes.
 - Sessions expire after eight hours of inactivity.

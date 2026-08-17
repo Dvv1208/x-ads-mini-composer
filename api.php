@@ -518,6 +518,10 @@ switch ($action) {
             respond(['error' => 'Method not allowed.'], 405);
         }
 
+        if (!App\Auth::canCreateContent()) {
+            respond(['error' => 'Content creation permission required.'], 403);
+        }
+
         $data = bodyJson();
 
         $shortId = base62Timestamp();

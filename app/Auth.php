@@ -80,6 +80,16 @@ final class Auth
         return (self::user()['role'] ?? '') === 'admin';
     }
 
+    public static function canManageAccounts(): bool
+    {
+        return in_array((self::user()['role'] ?? ''), ['admin', 'editor'], true);
+    }
+
+    public static function canCreateContent(): bool
+    {
+        return in_array((self::user()['role'] ?? ''), ['admin', 'editor'], true);
+    }
+
     public static function csrfToken(): string
     {
         if (!is_string($_SESSION['csrf_token'] ?? null)) {

@@ -45,25 +45,29 @@ $render = static function (string $view, array $variables = []): void {
     require __DIR__ . '/views/' . $view . '.php';
 };
 
-$requireLogin = static function (bool $admin = false): void {
+$requireLogin = static function (bool $accountManager = false): void {
     if (!Auth::check()) {
-        $redirect = $admin ? '?redirect=admin' : '';
+        $redirect = $accountManager ? '?redirect=admin' : '';
         header('Location: login' . $redirect, true, 303);
         exit;
     }
 
-    if ($admin && !Auth::isAdmin()) {
+    if ($accountManager && !Auth::canManageAccounts()) {
         Flight::halt(403, 'Forbidden');
     }
 };
 
-$requireAdminApi = static function (bool $verifyCsrf = false): void {
+$requireAccountApi = static function (bool $verifyCsrf = false, bool $adminOnly = false): void {
     if (!Auth::check()) {
         Flight::jsonHalt(['error' => 'Authentication required.'], 401);
     }
 
-    if (!Auth::isAdmin()) {
-        Flight::jsonHalt(['error' => 'Administrator permission required.'], 403);
+    if (!Auth::canManageAccounts() || ($adminOnly && !Auth::isAdmin())) {
+        Flight::jsonHalt([
+            'error' => $adminOnly
+                ? 'Administrator permission required.'
+                : 'Account management permission required.',
+        ], 403);
     }
 
     if ($verifyCsrf && !Auth::verifyCsrf($_SERVER['HTTP_X_APP_CSRF_TOKEN'] ?? null)) {
@@ -88,27 +92,28 @@ Flight::route('GET /admin', static function () use ($requireLogin, $render): voi
     $render('admin', [
         'currentUser' => Auth::user(),
         'csrfToken' => Auth::csrfToken(),
+        'canEditAccounts' => Auth::isAdmin(),
     ]);
 });
 
-Flight::route('GET /api/users', static function () use ($requireAdminApi, $controller): void {
-    $requireAdminApi();
+Flight::route('GET /api/users', static function () use ($requireAccountApi, $controller): void {
+    $requireAccountApi();
     $controller->index();
 });
-Flight::route('POST /api/users', static function () use ($requireAdminApi, $controller): void {
-    $requireAdminApi(true);
+Flight::route('POST /api/users', static function () use ($requireAccountApi, $controller): void {
+    $requireAccountApi(true);
     $controller->create();
 });
-Flight::route('GET /api/users/@id', static function (string $id) use ($requireAdminApi, $controller): void {
-    $requireAdminApi();
+Flight::route('GET /api/users/@id', static function (string $id) use ($requireAccountApi, $controller): void {
+    $requireAccountApi();
     $controller->show($id);
 });
-Flight::route('PUT /api/users/@id', static function (string $id) use ($requireAdminApi, $controller): void {
-    $requireAdminApi(true);
+Flight::route('PUT /api/users/@id', static function (string $id) use ($requireAccountApi, $controller): void {
+    $requireAccountApi(true, true);
     $controller->update($id);
 });
-Flight::route('DELETE /api/users/@id', static function (string $id) use ($requireAdminApi, $controller): void {
-    $requireAdminApi(true);
+Flight::route('DELETE /api/users/@id', static function (string $id) use ($requireAccountApi, $controller): void {
+    $requireAccountApi(true, true);
     $controller->delete($id);
 });
 

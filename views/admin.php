@@ -7,7 +7,7 @@
     <title>X Ads Admin</title>
     <link rel="stylesheet" href="assets/app.css?v=20260816-1">
 </head>
-<body>
+<body data-can-edit-accounts="<?= $canEditAccounts ? 'true' : 'false' ?>">
     <div class="shell admin-shell">
         <div class="topbar">
             <div class="brand">
@@ -65,6 +65,6 @@
     </div>
 
     <div class="status" id="status"></div>
-    <script src="assets/admin.js?v=20260816-1" defer></script>
+    <script src="assets/admin.js?v=20260817-1" defer></script>
 </body>
 </html>

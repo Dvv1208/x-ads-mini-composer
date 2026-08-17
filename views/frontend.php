@@ -18,7 +18,7 @@
                 </div>
             </div>
             <div class="header-actions">
-                <?php if (($currentUser['role'] ?? '') === 'admin'): ?>
+                <?php if (in_array(($currentUser['role'] ?? ''), ['admin', 'editor'], true)): ?>
                     <a class="small-btn link-btn" href="admin">Admin</a>
                 <?php endif; ?>
                 <span class="signed-user"><?= htmlspecialchars((string)$currentUser['username'], ENT_QUOTES, 'UTF-8') ?></span>
